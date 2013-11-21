@@ -4,43 +4,97 @@ var express = require('express')
   , argv = require('optimist').argv
   , http = require('http')
   , path = require('path')
+  , portfinder = require('portfinder')
+  , fs = require('fs')
   , open = require('open');
 
 var app = express();
 
+// Cli help
+if (argv.h || argv.help) {
+  console.log([
+    "usage: serve/server [path] [options]",
+    "",
+    "options:",
+    "  -a                 Address to use [0.0.0.0]",
+    "  -p                 Port to use [3000]",
+    "  -h --help          Print this list and exit.",
+  ].join('\n'));
+  process.exit();
+}
+
+// Get root to serve, if no path arguement passed in , try to use public then app
+function getRoot () {
+  var root = '';
+  if(!argv._[0]){
+    var dirs = ['public', 'app'];
+    dirs.map(function(dir) {
+      if(fs.existsSync(dir)) {
+        root = dir;
+        return;
+      }
+    });
+  }else{
+    root = argv._[0];
+  }
+  return path.resolve(root);
+}
+
+// server configuration
 var server = {
-  root: path.resolve(argv._[0]),
+  host: argv.a || '0.0.0.0',
+  root: getRoot(),
   port: 3000
 }
-app.configure(function(){
-  app.set('port', process.env.PORT || 3000);
-  app.use(express.favicon());
-  app.use(express.logger('dev'));
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(app.router);
-  app.use(express.static(server.root));
-  app.use(express.errorHandler());
-});
 
-/*
- * CORS Support in my Node.js web app written with Express
- * https://groups.google.com/forum/#!msg/angular/CSBMY6oXfqs/1UYNRHau8q8J
- */
+// Use portfinder to find an open port not being used, default is 3000
+function getPort () {
+  if (!argv.p) {
+    portfinder.basePort = 3000;
+    portfinder.getPort(function (err, port) {
+      if (err) throw err;
+      server.port = port;
+      console.log(server);
+      start(app, server);
+    });
+  } else {
+    server.port = argv.p;
+    start(app, server);
+  }
+}
 
-// http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
-app.all('/*', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", 'Content-Type, X-Requested-With');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    next();
-});
+function start(app,serverConfig) {
+  app.configure(function(){
+    app.set('port', serverConfig.port);
+    app.use(express.favicon());
+    app.use(express.logger('dev'));
+    app.use(express.directory(serverConfig.root));
+    app.use(express.static(serverConfig.root));
+    app.use(express.errorHandler());
+  });
 
-// handle OPTIONS requests from the browser
-app.options("*", function(req,res,next){res.send(200);});
+  /*
+   * CORS Support in my Node.js web app written with Express
+   * https://groups.google.com/forum/#!msg/angular/CSBMY6oXfqs/1UYNRHau8q8J
+   * http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
+  */
+  app.all('/*', function(req, res, next) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", 'Content-Type, X-Requested-With');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      next();
+  });
 
-http.createServer(app).listen(app.get('port'), function(){
-  console.log("Express server listening on port " + app.get('port'));
-  console.log('Opening server')
-  open('http://127.0.0.1' + ':' + app.get('port'));
-});
+  // handle OPTIONS requests from the browser
+  app.options("*", function(req,res,next){res.send(200);});
+
+  http.createServer(app).listen(app.get('port'), function(){
+    console.log("Express server listening on port " + app.get('port'));
+    console.log('Opening browser')
+    console.log(server.host)
+    open("http://" + server.host + ':' + app.get('port'));
+  });
+}
+
+getPort();
+
