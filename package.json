@@ -1,13 +1,13 @@
 {
-  "name": "static-server",
+  "name": "simple-static-server",
   "version": "0.0.1",
-  "description": "express as a static http server",
+  "description": "use express as a static http server",
   "main": "bin/static-server",
   "scripts": {
     "start": "node ./bin/static-server"
   },
-  "repository": "",
-  "author": "",
+  "repository": "https://github.com/dfang/static-server",
+  "author": "dfang",
   "license": "BSD",
   "dependencies": {
     "express": "~3.3.4",
@@ -15,6 +15,7 @@
     "open": "0.0.4",
     "portfinder": "0.2.x"
   },
+  "keywords": ['static server, express static, simple http server'],
   "preferGlobal": "true",
   "bin": {
     "serve": "./bin/static-server",
