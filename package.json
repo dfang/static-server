@@ -15,7 +15,7 @@
     "open": "0.0.4",
     "portfinder": "0.2.x"
   },
-  "keywords": ['static server, express static, simple http server'],
+  "keywords": ["static server", "express static", "simple http server"],
   "preferGlobal": "true",
   "bin": {
     "serve": "./bin/static-server",
